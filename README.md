@@ -56,6 +56,9 @@ Loading the code onto a system will also prove to be a challenge because it will
 ### References:
 
 https://os.phil-opp.com/minimal-rust-kernel/
+
 https://os.phil-opp.com/
+
 https://www.gnu.org/software/bash/manual/html_node/index.html#SEC_Contents
+
 https://github.com/clap-rs/clap
