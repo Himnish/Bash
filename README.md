@@ -4,7 +4,8 @@
 -Himnish Jain     (himnish2)
 -Labdhi Jain      (ljain2)
 -Sumeet Kulkarni  (sumeetk2)
-Creating a Bash in Rust
+
+### Creating a Bash in Rust
 
 ### Introduction:
 
@@ -24,7 +25,6 @@ The kernel allocates requests from applications to perform I/O to an appropriate
 ```cd```
 ```ls```
 ```ls -a```
-
  etc. 
 3. Handle errors properly, including the functionality for the 
 ```exit```
@@ -46,13 +46,11 @@ Here is a list of techincal components we are planning to use to complete this p
  - Build standard feature of cargo : The build standard feature is required to be able to make the program be compatible for other platforms as well
 
 
-
 ### Possible challenges:
 
 Some challenges we may face include figuring out how to use the “clap” crate in our project to parse terminal commands. GNU bash is a UNIX shell itself so we may face some issues parsing UNIX commands to Rust. Creating a kernel in Rust will also prove to be difficult, as we haven’t learned in class how exactly to create a bootable disk from the Rust binary.
 
 Loading the code onto a system will also prove to be a challenge because it will require the project to work across operating systems. Coding the UNIX commands will be very advanced as well, and we may not have enough time for them in the end because coding the kernel is difficult enough. Simply put, coding an entire shell in Rust is a difficult task and we haven’t necessarily learned all the required knowledge to do this in class.
-
 
 
 ### References:
