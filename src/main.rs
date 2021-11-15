@@ -11,7 +11,7 @@ fn main() {
         stdin().read_line(&mut inp).unwrap();
         let mut sections = inp.trim().split_whitespace();
         let input_fin = sections.next().unwrap();
-        let arguments = sections;
+        let mut arguments = sections;
 
         match input_fin {
             "cd" => {
@@ -22,7 +22,36 @@ fn main() {
                 }
             }
             "exit" => return,
+            "echo" => {
+                let mut output = String::new();
+                let mut count = 0;
+                let mut arg = "";
+                for x in arguments {
+                    if count==0&&(x=="-n"||x=="-e"||x=="-E") {
+                        arg = x;
+                        count = count + 1;
+                        continue;
+                    }
+                    match arg {
+                        "-e" => {
+                            output.push_str(&x);
+                            output.push_str(" ");
+                        },
+                        _ => {
+                            let uninterpret_backslash = str::replace(x, "\\", "\\\\");
+                            output.push_str(&uninterpret_backslash);
+                            output.push_str(" ");
+                        }
 
+                    }
+                    count = count + 1;
+                }
+                if arg=="-n" {
+                    print!("{}", output.trim());
+                } else {
+                    println!("{}", output.trim());
+                }
+            }
             input_fin => {
                 let mut new_command = Command::new(input_fin).args(arguments).spawn();
 
