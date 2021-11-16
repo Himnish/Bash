@@ -4,7 +4,7 @@ use std::path::Path;
 use std::process::Command;
 fn main() {
     loop {
-        print!("🌽 > ");
+        print!("🌽$ ");
         stdout().flush();
 
         let mut inp = String::new();

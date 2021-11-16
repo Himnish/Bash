@@ -1,1 +1,1 @@
-/home/vagrant/src/Corn_el/target/debug/Corn_el: /home/vagrant/src/Corn_el/src/main.rs
+/home/vagrant/src/RUST/Bash/target/debug/Corn_el: /home/vagrant/src/RUST/Bash/src/main.rs
