@@ -23,6 +23,7 @@ fn main() {
             }
             "exit" => return,
             "echo" => {
+                
                 let mut output = String::new();
                 let mut count = 0;
                 let mut arg = "";
@@ -34,12 +35,12 @@ fn main() {
                     }
                     match arg {
                         "-e" => {
-                            output.push_str(&x);
+                            let interpret_backslash = str::replace(x, "\\\\", "\\");
+                            output.push_str(&interpret_backslash);
                             output.push_str(" ");
                         },
                         _ => {
-                            let uninterpret_backslash = str::replace(x, "\\", "\\\\");
-                            output.push_str(&uninterpret_backslash);
+                            output.push_str(&x);
                             output.push_str(" ");
                         }
 
