@@ -3,6 +3,7 @@ use std::io::{stdin, stdout, Write};
 use std::path::Path;
 use std::process::Command;
 use std::collections::HashMap;
+use std::time::{Duration, SystemTime};
 
 fn main() {
     let mut binds: HashMap<String, String> = HashMap::new();
@@ -68,6 +69,18 @@ fn main() {
                 let mut t2 = String::from(split[1]);
                 t2.retain(|c| c != '"' || c != '\'');
                 &binds.insert(t1,t2);
+            }
+
+            "times" =>{
+                let now = SystemTime::now();
+                match now.elapsed() {
+                    Ok(elapsed) => {    
+                      println!("0m0.000{}s 0m0.000{}s", elapsed.as_nanos(), elapsed.as_nanos());
+                    }
+                    Err(error) => {
+                        println!("System time error");
+                    }
+                }
             }
 
             input_fin => {
