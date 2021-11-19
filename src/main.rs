@@ -75,7 +75,7 @@ fn main() {
                 let now = SystemTime::now();
                 match now.elapsed() {
                     Ok(elapsed) => {    
-                      println!("0m0.000{}s 0m0.000{}s", elapsed.as_nanos(), elapsed.as_nanos());
+                      println!("0m{}s 0m{}s", (elapsed.as_nanos() as f32)/(100000.0), (elapsed.as_nanos() as f32)/(100000.0));
                     }
                     Err(error) => {
                         println!("System time error");
