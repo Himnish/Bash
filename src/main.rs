@@ -15,7 +15,7 @@ fn main() {
         let mut sections = inp.trim().split_whitespace();
         let mut input_fin = sections.next().unwrap();
         let mut arguments = sections;
-        
+
         if binds.contains_key(input_fin){
             input_fin = &binds[input_fin];
         }
@@ -89,6 +89,6 @@ fn main() {
 }
 
 // things that work:
-// cd, echo, bind, exit, clear, ls
+// cd, echo, bind, exit, clear, ls, pwd, 
 
 
