@@ -1,94 +1,118 @@
 use std::env;
 use std::io::{stdin, stdout, Write};
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Child, Stdio};
 use std::collections::HashMap;
 
 fn main() {
     let mut binds: HashMap<String, String> = HashMap::new();
+    print!("\n🌽\n🌽 Welcome to the Corn-el 🌽\n🌽\n");
     loop {
         print!("🌽$ ");
         stdout().flush();
 
         let mut inp = String::new();
         stdin().read_line(&mut inp).unwrap();
-        let mut sections = inp.trim().split_whitespace();
-        let mut input_fin = sections.next().unwrap();
-        let mut arguments = sections;
-        
-        if binds.contains_key(input_fin){
-            input_fin = &binds[input_fin];
-        }
 
-        match input_fin {
-            "cd" => {
-                let new_dir = arguments.peekable().peek().map_or("/", |x| *x);
-                let root = Path::new(new_dir);
-                if let Err(e) = env::set_current_dir(&root) {
-                    eprintln!("{}", e);
-                }
+        let mut comm = inp.trim().split(" | ").peekable();
+        let mut prev_comm = None;
+
+        while let Some(command) = comm.next() {
+
+            let mut sections = inp.trim().split_whitespace();
+            let mut input_fin = sections.next().unwrap();
+            let mut arguments = sections;
+            
+            if binds.contains_key(input_fin){
+                input_fin = &binds[input_fin];
             }
-            "exit" => return,
-            "echo" => {
-                
-                let mut output = String::new();
-                let mut count = 0;
-                let mut arg = "";
-                for x in arguments {
-                    if count==0&&(x=="-n"||x=="-e"||x=="-E") {
-                        arg = x;
-                        count = count + 1;
-                        continue;
+
+            match input_fin {
+                "cd" => {
+                    let new_dir = arguments.peekable().peek().map_or("/", |x| *x);
+                    let base = Path::new(new_dir);
+                    if let Err(e) = env::set_current_dir(&base) {
+                        eprintln!("{}", e);
                     }
-                    match arg {
-                        "-e" => {
-                            let interpret_backslash = str::replace(x, "\\\\", "\\");
-                            output.push_str(&interpret_backslash);
-                            output.push_str(" ");
-                        },
-                        _ => {
-                            output.push_str(&x);
-                            output.push_str(" ");
+                    prev_comm = None;
+                },
+
+                "exit" => return,
+                "echo" => {
+                    let mut output = String::new();
+                    let mut count = 0;
+                    let mut arg = "";
+                    for x in arguments {
+                        if count==0&&(x=="-n"||x=="-e"||x=="-E") {
+                            arg = x;
+                            count = count + 1;
+                            continue;
                         }
+                        match arg {
+                            "-e" => {
+                                let interpret_backslash = str::replace(x, "\\\\", "\\");
+                                output.push_str(&interpret_backslash);
+                                output.push_str(" ");
+                            },
+                            _ => {
+                                output.push_str(&x);
+                                output.push_str(" ");
+                            }
 
+                        }
+                        count = count + 1;
                     }
-                    count = count + 1;
-                }
-                if arg=="-n" {
-                    print!("{}", output.trim());
-                } else {
-                    println!("{}", output.trim());
-                }
-            }
-            "bind" =>{
-                let strin:String = arguments.next().unwrap().to_string();
-                let mut split:Vec<&str> = strin.split(":").collect();
-                let mut t1 = String::from(split[0]);
-                t1.retain(|c| c != '"' || c != '\'');
-                let mut t2 = String::from(split[1]);
-                t2.retain(|c| c != '"' || c != '\'');
-                &binds.insert(t1,t2);
-            }
-
-            input_fin => {
-                let mut new_command = Command::new(input_fin).args(arguments).spawn();
-
-                match new_command {
-                    Ok(mut new_command) => {
-                        new_command.wait();
+                    if arg=="-n" {
+                        print!("{}", output.trim());
+                    } else {
+                        println!("{}", output.trim());
                     }
-                    Err(e) => eprintln!("{}", e),
-                };
+                }
+                "bind" =>{
+                    let strin:String = arguments.next().unwrap().to_string();
+                    let mut split:Vec<&str> = strin.split(":").collect();
+                    let mut t1 = String::from(split[0]);
+                    t1.retain(|c| c != '"' || c != '\'');
+                    let mut t2 = String::from(split[1]);
+                    t2.retain(|c| c != '"' || c != '\'');
+                    &binds.insert(t1,t2);
+                }
+
+                input_fin => {
+                    let stdin = prev_comm.map_or(Stdio::inherit(), |output: Child| Stdio::from(output.stdout.unwrap()));
+
+                    let stdout = if comm.peek().is_some() {
+                        Stdio::piped()
+                    } 
+                    else {
+                        Stdio::inherit()
+                    };
+                    let new_command = Command::new(input_fin)
+                        .args(arguments)
+                        .stdin(stdin)
+                        .stdout(stdout)
+                        .spawn();
+                    match new_command {
+                        Ok(new_command) => {
+                            prev_comm = Some(new_command);
+                        },
+                        Err(e) => {
+                            prev_comm = None;
+                            eprintln!("{}", e);
+                        },
+                    };
+                }
             }
         }
+        if let Some(mut fin_comm) = prev_comm { fin_comm.wait().unwrap(); }
     }
-
-    //Himnish => cd, exit, printf
-    //Labdhi => bind
-    //Sumeet => echo
 }
 
 // things that work:
 // cd, echo, bind, exit, clear, ls
+//Himnish => cd, exit, printf
+//Labdhi => bind
+//Sumeet => echo
+//pipes, redirection operator, indirection operator, 
 
 
