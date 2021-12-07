@@ -3,6 +3,7 @@ use std::io::{stdin, stdout, Write};
 use std::path::Path;
 use std::process::{Command, Child, Stdio};
 use std::collections::HashMap;
+use std::time::{Duration, SystemTime};
 
 fn main() {
     let mut binds: HashMap<String, String> = HashMap::new();
@@ -68,7 +69,7 @@ fn main() {
                         println!("{}", output.trim());
                     }
                 }
-                "bind" =>{
+                "bind" => {
                     let strin:String = arguments.next().unwrap().to_string();
                     let mut split:Vec<&str> = strin.split(":").collect();
                     let mut t1 = String::from(split[0]);
@@ -77,21 +78,26 @@ fn main() {
                     t2.retain(|c| c != '"' || c != '\'');
                     &binds.insert(t1,t2);
                 }
-
+                "times" => {
+                    let now = SystemTime::now();
+                    match now.elapsed() {
+                        Ok(elapsed) => {    
+                          println!("0m{}s 0m{}s", (elapsed.as_nanos() as f32)/(100000.0), (elapsed.as_nanos() as f32)/(100000.0));
+                        }
+                        Err(error) => {
+                            println!("System time error");
+                        }
+                    }
+                }
                 input_fin => {
                     let stdin = prev_comm.map_or(Stdio::inherit(), |output: Child| Stdio::from(output.stdout.unwrap()));
-
                     let stdout = if comm.peek().is_some() {
                         Stdio::piped()
                     } 
                     else {
                         Stdio::inherit()
                     };
-                    let new_command = Command::new(input_fin)
-                        .args(arguments)
-                        .stdin(stdin)
-                        .stdout(stdout)
-                        .spawn();
+                    let new_command = Command::new(input_fin).args(arguments).stdin(stdin).stdout(stdout).spawn();
                     match new_command {
                         Ok(new_command) => {
                             prev_comm = Some(new_command);
@@ -110,9 +116,7 @@ fn main() {
 
 // things that work:
 // cd, echo, bind, exit, clear, ls
-//Himnish => cd, exit, printf
+//Himnish => cd, exit, pipes
 //Labdhi => bind
 //Sumeet => echo
-//pipes, redirection operator, indirection operator, 
-
-
+//pipes
