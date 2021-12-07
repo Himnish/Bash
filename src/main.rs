@@ -1,9 +1,12 @@
+
 use std::env;
+use std::thread;
 use std::io::{stdin, stdout, Write};
 use std::path::Path;
 use std::process::Command;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
+use std::str::SplitWhitespace;
 
 fn main() {
     let mut binds: HashMap<String, String> = HashMap::new();
@@ -14,25 +17,100 @@ fn main() {
         let mut inp = String::new();
         stdin().read_line(&mut inp).unwrap();
         let mut sections = inp.trim().split_whitespace();
-        let mut input_fin = sections.next().unwrap();
-        let mut arguments = sections;
 
+        let mut sections_back = inp.trim().split_whitespace();
+        let mut final_input = sections_back.next_back().unwrap();  
+        let mut run_background:bool = false;
+        if(final_input == "&"){
+            run_background = true;
+        }
+        let mut input_fin = sections.next().unwrap();
+        let mut arguments = sections;  
+
+        // for (key, val) in &binds{
+        //     println!("{}, and val: {}", key, val);
+        // }
+        
         if binds.contains_key(input_fin){
+        
             input_fin = &binds[input_fin];
         }
 
         match input_fin {
-            "cd" => {
-                let new_dir = arguments.peekable().peek().map_or("/", |x| *x);
-                let root = Path::new(new_dir);
-                if let Err(e) = env::set_current_dir(&root) {
-                    eprintln!("{}", e);
+            "cd" =>{
+                if run_background {
+                    let mut new_arg = arguments;
+                    // let handle = thread::spawn(  || { 
+                    //     _cd(new_arg);
+                    // });
+
+                    // handle.join().unwrap();
+                }else{
+                    _cd(arguments);
                 }
-            }
+            } 
             "exit" => return,
             "echo" => {
+                if run_background{
+
+                }else{
+                    _echo(arguments);
+                }
+            } 
+            "bind" => {
+                if run_background{
+
+                }else{
+                    let strin:String = arguments.next().unwrap().to_string();
+   
+                let mut split:Vec<&str> = strin.split(":").collect();
+                let mut t1 = String::from(split[0]);
+                t1.retain(|c| c != '"' || c != '\'');
+                let mut t2 = String::from(split[1]);
+                t2.retain(|c| c != '"' || c != '\'');
+                println!("'{}' changed to '{}'", &t2, &t1);
+                binds.insert(t1,t2);
+
                 
-                let mut output = String::new();
+                }
+            } 
+            "times" =>{
+                if run_background {
+
+                }else{
+                    _times();
+                }
+            }
+
+            input_fin => {
+                if run_background{
+
+                }else{
+                    _generic(arguments, input_fin);
+                }
+                
+            }
+        }
+    }
+
+    //Himnish => cd, exit, printf
+    //Labdhi => bind
+    //Sumeet => echo
+}
+
+// things that work:
+// cd, echo, bind, exit, clear, ls
+
+pub fn _cd(arguments: SplitWhitespace){
+    let new_dir = arguments.peekable().peek().map_or("/", |x| *x);
+    let root = Path::new(new_dir);
+    if let Err(e) = env::set_current_dir(&root) {
+        eprintln!("{}", e);
+    }
+}
+
+pub fn _echo(arguments: SplitWhitespace){
+    let mut output = String::new();
                 let mut count = 0;
                 let mut arg = "";
                 for x in arguments {
@@ -60,19 +138,14 @@ fn main() {
                 } else {
                     println!("{}", output.trim());
                 }
-            }
-            "bind" =>{
-                let strin:String = arguments.next().unwrap().to_string();
-                let mut split:Vec<&str> = strin.split(":").collect();
-                let mut t1 = String::from(split[0]);
-                t1.retain(|c| c != '"' || c != '\'');
-                let mut t2 = String::from(split[1]);
-                t2.retain(|c| c != '"' || c != '\'');
-                &binds.insert(t1,t2);
-            }
+}
 
-            "times" =>{
-                let now = SystemTime::now();
+pub fn _bind(arguments: &mut SplitWhitespace , binds: &mut HashMap<String, String>){
+    
+}
+
+pub fn _times(){
+    let now = SystemTime::now();
                 match now.elapsed() {
                     Ok(elapsed) => {    
                       println!("0m{}s 0m{}s", (elapsed.as_nanos() as f32)/(100000.0), (elapsed.as_nanos() as f32)/(100000.0));
@@ -81,27 +154,16 @@ fn main() {
                         println!("System time error");
                     }
                 }
-            }
-
-            input_fin => {
-                let mut new_command = Command::new(input_fin).args(arguments).spawn();
-
-                match new_command {
-                    Ok(mut new_command) => {
-                        new_command.wait();
-                    }
-                    Err(e) => eprintln!("{}", e),
-                };
-            }
-        }
-    }
-
-    //Himnish => cd, exit, printf
-    //Labdhi => bind
-    //Sumeet => echo
 }
 
-// things that work:
-// cd, echo, bind, exit, clear, ls, pwd, 
+pub fn _generic(arguments : SplitWhitespace, input_fin : &str){
+    let mut new_command = Command::new(input_fin).args(arguments).spawn();
 
+    match new_command {
+        Ok(mut new_command) => {
+            new_command.wait();
+        }
+        Err(e) => eprintln!("{}", e),
+    };
 
+}
