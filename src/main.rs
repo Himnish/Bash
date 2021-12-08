@@ -56,7 +56,8 @@ fn main() {
                                 output.push_str(" ");
                             },
                             _ => {
-                                output.push_str(&x);
+                                let remove_quote = str::replace(x, "\"", "");
+                                output.push_str(&remove_quote);
                                 output.push_str(" ");
                             }
 
