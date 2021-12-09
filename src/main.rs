@@ -7,23 +7,23 @@ use std::process::{Child, Command, Stdio};
 use std::time::{Duration, SystemTime};
 fn main(){
     let mut binds: HashMap<String, String> = HashMap::new();
+    print!("\x1B[2J\x1B[1;1H");
     print!("\n🌽\n🌽 Welcome to the Corn-el 🌽\n🌽\n");
     loop {
         print!("🌽$ ");
         stdout().flush().unwrap();
 
-        let mut input = String::new();
-        stdin().read_line(&mut input).unwrap();
+        let mut inp = String::new();
+        stdin().read_line(&mut inp).unwrap();
 
-        let mut commands = input.trim().split(" | ").peekable();
-        let mut previous_command = None;
+        let mut comm = inp.trim().split(" | ").peekable();
+        let mut prev_comm = None;
 
-        while let Some(command) = commands.next()  {
+        while let Some(command) = comm.next()  {
 
-            let mut parts = command.trim().split_whitespace();
-
-            let mut command = parts.next().unwrap();
-            let mut args = parts;
+            let mut sections = command.trim().split_whitespace();
+            let mut command = sections.next().unwrap();
+            let mut args = sections;
 
             if binds.contains_key(command){
                 command = &binds[command];
@@ -36,7 +36,7 @@ fn main(){
                     if let Err(e) = env::set_current_dir(&base) {
                         eprintln!("{}", e);
                     }
-                    previous_command = None;
+                    prev_comm = None;
                 },
                 "exit" => return,
                 "echo" => {
@@ -91,11 +91,11 @@ fn main(){
                     &binds.insert(t1,t2);
                 },
                 command => {
-                    let stdin = previous_command
+                    let stdin = prev_comm
                         .map_or(Stdio::inherit(),
                                 |output: Child| Stdio::from(output.stdout.unwrap()));
 
-                    let stdout = if commands.peek().is_some() {
+                    let stdout = if comm.peek().is_some() {
                         Stdio::piped()
                     } else {
                         Stdio::inherit()
@@ -108,9 +108,9 @@ fn main(){
                         .spawn();
 
                     match output {
-                        Ok(output) => { previous_command = Some(output); },
+                        Ok(output) => { prev_comm = Some(output); },
                         Err(e) => {
-                            previous_command = None;
+                            prev_comm = None;
                             eprintln!("{}", e);
                         },
                     };
@@ -118,7 +118,7 @@ fn main(){
             }
         }
 
-        if let Some(mut final_command) = previous_command {
+        if let Some(mut final_command) = prev_comm {
             final_command.wait().unwrap();
         }
 
