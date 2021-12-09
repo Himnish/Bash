@@ -29,12 +29,12 @@ fn main(){
 
             match command {
                 "cd" => {
-                    let new_dir = arguments.peekable().peek().map_or("/", |x| *x);
+                    let new_dir = args.peekable().peek().map_or("/", |x| *x);
                     let base = Path::new(new_dir);
                     if let Err(e) = env::set_current_dir(&base) {
                         eprintln!("{}", e);
                     }
-                    prev_comm = None;
+                    previous_command = None;
                 },
                 "exit" => return,
                 "echo" => {
@@ -80,7 +80,7 @@ fn main(){
                     }
                 },
                 "bind" => {
-                    let strin:String = arguments.next().unwrap().to_string();
+                    let strin:String = args.next().unwrap().to_string();
                     let mut split:Vec<&str> = strin.split(":").collect();
                     let mut t1 = String::from(split[0]);
                     t1.retain(|c| c != '"' || c != '\'');
