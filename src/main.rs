@@ -3,20 +3,38 @@ use std::env;
 use std::thread;
 use std::io::{stdin, stdout, Write};
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Child, Stdio};
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
 use std::str::SplitWhitespace;
 
 fn main() {
     let mut binds: HashMap<String, String> = HashMap::new();
+    print!("\n🌽\n🌽 Welcome to the Corn-el 🌽\n🌽\n");
     loop {
         print!("🌽$ ");
         stdout().flush();
 
         let mut inp = String::new();
         stdin().read_line(&mut inp).unwrap();
-        let mut sections = inp.trim().split_whitespace();
+
+        
+
+        let mut comm = inp.trim().split(" | ").peekable();
+
+        for i in inp.trim().split(" | "){
+            println!("{}", i);
+        }
+        // println!("{:?}", inp.trim().split(" | ").as_str());
+        let mut prev_comm = None;
+
+        while let Some(command) = comm.next() {
+
+            let mut sections = inp.trim().split_whitespace();
+            let mut input_fin = sections.next().unwrap();
+            let mut arguments = sections;
+
+            let mut sections = inp.trim().split_whitespace();
 
         let mut sections_back = inp.trim().split_whitespace();
         let mut final_input = sections_back.next_back().unwrap();  
@@ -30,140 +48,100 @@ fn main() {
         // for (key, val) in &binds{
         //     println!("{}, and val: {}", key, val);
         // }
-        
-        if binds.contains_key(input_fin){
-        
-            input_fin = &binds[input_fin];
-        }
+            
+            if binds.contains_key(input_fin){
+                input_fin = &binds[input_fin];
+            }
 
-        match input_fin {
-            "cd" =>{
-                if run_background {
-                    let mut new_arg = arguments;
-                    // let handle = thread::spawn(  || { 
-                    //     _cd(new_arg);
-                    // });
+            match input_fin {
+                "cd" => {
+                    let new_dir = arguments.peekable().peek().map_or("/", |x| *x);
+                    let base = Path::new(new_dir);
+                    if let Err(e) = env::set_current_dir(&base) {
+                        eprintln!("{}", e);
+                    }
+                    prev_comm = None;
+                },
 
-                    // handle.join().unwrap();
-                }else{
-                    _cd(arguments);
-                }
-            } 
-            "exit" => return,
-            "echo" => {
-                if run_background{
+                "exit" => return,
+                "echo" => {
+                    let mut output = String::new();
+                    let mut count = 0;
+                    let mut arg = "";
+                    for x in arguments {
+                        if count==0&&(x=="-n"||x=="-e"||x=="-E") {
+                            arg = x;
+                            count = count + 1;
+                            continue;
+                        }
+                        match arg {
+                            "-e" => {
+                                let interpret_backslash = str::replace(x, "\\\\", "\\");
+                                output.push_str(&interpret_backslash);
+                                output.push_str(" ");
+                            },
+                            _ => {
+                                output.push_str(&x);
+                                output.push_str(" ");
+                            }
 
-                }else{
-                    _echo(arguments);
-                }
-            } 
-            "bind" => {
-                if run_background{
-
-                }else{
+                        }
+                        count = count + 1;
+                    }
+                    if arg=="-n" {
+                        print!("{}", output.trim());
+                    } else {
+                        println!("{}", output.trim());
+                    }
+                },
+                "bind" => {
                     let strin:String = arguments.next().unwrap().to_string();
-   
-                let mut split:Vec<&str> = strin.split(":").collect();
-                let mut t1 = String::from(split[0]);
-                t1.retain(|c| c != '"' || c != '\'');
-                let mut t2 = String::from(split[1]);
-                t2.retain(|c| c != '"' || c != '\'');
-                println!("'{}' changed to '{}'", &t2, &t1);
-                binds.insert(t1,t2);
-
-                
+                    let mut split:Vec<&str> = strin.split(":").collect();
+                    let mut t1 = String::from(split[0]);
+                    t1.retain(|c| c != '"' || c != '\'');
+                    let mut t2 = String::from(split[1]);
+                    t2.retain(|c| c != '"' || c != '\'');
+                    &binds.insert(t1,t2);
+                },
+                "times" => {
+                    let now = SystemTime::now();
+                    match now.elapsed() {
+                        Ok(elapsed) => {    
+                          println!("0m{}s 0m{}s", (elapsed.as_nanos() as f32)/(100000.0), (elapsed.as_nanos() as f32)/(100000.0));
+                        }
+                        Err(error) => {
+                            println!("System time error");
+                        }
+                    }
+                },
+                input_fin => {
+                    let stdin = prev_comm.map_or(Stdio::inherit(), |output: Child| Stdio::from(output.stdout.unwrap()));
+                    let stdout = if comm.peek().is_some() {
+                        Stdio::piped()
+                    } 
+                    else {
+                        Stdio::inherit()
+                    };
+                    let new_command = Command::new(input_fin).args(arguments).stdin(stdin).stdout(stdout).spawn();
+                    match new_command {
+                        Ok(new_command) => {
+                            prev_comm = Some(new_command);
+                        },
+                        Err(e) => {
+                            prev_comm = None;
+                            eprintln!("{}", e);
+                        },
+                    };
                 }
-            } 
-            "times" =>{
-                if run_background {
-
-                }else{
-                    _times();
-                }
-            }
-
-            input_fin => {
-                if run_background{
-
-                }else{
-                    _generic(arguments, input_fin);
-                }
-                
             }
         }
+        if let Some(mut fin_comm) = prev_comm { fin_comm.wait().unwrap(); }
     }
-
-    //Himnish => cd, exit, printf
-    //Labdhi => bind
-    //Sumeet => echo
 }
 
 // things that work:
 // cd, echo, bind, exit, clear, ls
-
-pub fn _cd(arguments: SplitWhitespace){
-    let new_dir = arguments.peekable().peek().map_or("/", |x| *x);
-    let root = Path::new(new_dir);
-    if let Err(e) = env::set_current_dir(&root) {
-        eprintln!("{}", e);
-    }
-}
-
-pub fn _echo(arguments: SplitWhitespace){
-    let mut output = String::new();
-                let mut count = 0;
-                let mut arg = "";
-                for x in arguments {
-                    if count==0&&(x=="-n"||x=="-e"||x=="-E") {
-                        arg = x;
-                        count = count + 1;
-                        continue;
-                    }
-                    match arg {
-                        "-e" => {
-                            let interpret_backslash = str::replace(x, "\\\\", "\\");
-                            output.push_str(&interpret_backslash);
-                            output.push_str(" ");
-                        },
-                        _ => {
-                            output.push_str(&x);
-                            output.push_str(" ");
-                        }
-
-                    }
-                    count = count + 1;
-                }
-                if arg=="-n" {
-                    print!("{}", output.trim());
-                } else {
-                    println!("{}", output.trim());
-                }
-}
-
-pub fn _bind(arguments: &mut SplitWhitespace , binds: &mut HashMap<String, String>){
-    
-}
-
-pub fn _times(){
-    let now = SystemTime::now();
-                match now.elapsed() {
-                    Ok(elapsed) => {    
-                      println!("0m{}s 0m{}s", (elapsed.as_nanos() as f32)/(100000.0), (elapsed.as_nanos() as f32)/(100000.0));
-                    }
-                    Err(error) => {
-                        println!("System time error");
-                    }
-                }
-}
-
-pub fn _generic(arguments : SplitWhitespace, input_fin : &str){
-    let mut new_command = Command::new(input_fin).args(arguments).spawn();
-
-    match new_command {
-        Ok(mut new_command) => {
-            new_command.wait();
-        }
-        Err(e) => eprintln!("{}", e),
-    };
-
-}
+//Himnish => cd, exit, pipes
+//Labdhi => bind
+//Sumeet => echo
+//pipes
