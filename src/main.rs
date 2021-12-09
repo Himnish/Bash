@@ -30,7 +30,7 @@ fn main() {
 
         while let Some(command) = comm.next() {
 
-            let mut sections = inp.trim().split_whitespace();
+            let mut sections = command.trim().split_whitespace();
             let mut input_fin = sections.next().unwrap();
             let mut arguments = sections;
 
@@ -81,7 +81,8 @@ fn main() {
                                 output.push_str(" ");
                             },
                             _ => {
-                                output.push_str(&x);
+                                let remove_quote = str::replace(x, "\"", "");
+                                output.push_str(&remove_quote);
                                 output.push_str(" ");
                             }
 
