@@ -1,74 +1,48 @@
-
+use std::collections::HashMap;
 use std::env;
 use std::thread;
 use std::io::{stdin, stdout, Write};
 use std::path::Path;
-use std::process::{Command, Child, Stdio};
-use std::collections::HashMap;
+use std::process::{Child, Command, Stdio};
 use std::time::{Duration, SystemTime};
-use std::str::SplitWhitespace;
-
-fn main() {
+fn main(){
     let mut binds: HashMap<String, String> = HashMap::new();
     print!("\n🌽\n🌽 Welcome to the Corn-el 🌽\n🌽\n");
     loop {
         print!("🌽$ ");
-        stdout().flush();
+        stdout().flush().unwrap();
 
-        let mut inp = String::new();
-        stdin().read_line(&mut inp).unwrap();
+        let mut input = String::new();
+        stdin().read_line(&mut input).unwrap();
 
-        
+        let mut commands = input.trim().split(" | ").peekable();
+        let mut previous_command = None;
 
-        let mut comm = inp.trim().split(" | ").peekable();
+        while let Some(command) = commands.next()  {
 
-        for i in inp.trim().split(" | "){
-            println!("{}", i);
-        }
-        // println!("{:?}", inp.trim().split(" | ").as_str());
-        let mut prev_comm = None;
+            let mut parts = command.trim().split_whitespace();
+            let mut command = parts.next().unwrap();
+            let mut args = parts;
 
-        while let Some(command) = comm.next() {
-
-            let mut sections = command.trim().split_whitespace();
-            let mut input_fin = sections.next().unwrap();
-            let mut arguments = sections;
-
-            let mut sections = inp.trim().split_whitespace();
-
-        let mut sections_back = inp.trim().split_whitespace();
-        let mut final_input = sections_back.next_back().unwrap();  
-        let mut run_background:bool = false;
-        if(final_input == "&"){
-            run_background = true;
-        }
-        let mut input_fin = sections.next().unwrap();
-        let mut arguments = sections;  
-
-        // for (key, val) in &binds{
-        //     println!("{}, and val: {}", key, val);
-        // }
-            
-            if binds.contains_key(input_fin){
-                input_fin = &binds[input_fin];
+            if binds.contains_key(command){
+                command = &binds[command];
             }
 
-            match input_fin {
+            match command {
                 "cd" => {
-                    let new_dir = arguments.peekable().peek().map_or("/", |x| *x);
+                    let new_dir = args.peekable().peek().map_or("/", |x| *x);
                     let base = Path::new(new_dir);
                     if let Err(e) = env::set_current_dir(&base) {
                         eprintln!("{}", e);
                     }
-                    prev_comm = None;
+                    previous_command = None;
                 },
-
                 "exit" => return,
                 "echo" => {
                     let mut output = String::new();
                     let mut count = 0;
                     let mut arg = "";
-                    for x in arguments {
+                    for x in args {
                         if count==0&&(x=="-n"||x=="-e"||x=="-E") {
                             arg = x;
                             count = count + 1;
@@ -95,15 +69,6 @@ fn main() {
                         println!("{}", output.trim());
                     }
                 },
-                "bind" => {
-                    let strin:String = arguments.next().unwrap().to_string();
-                    let mut split:Vec<&str> = strin.split(":").collect();
-                    let mut t1 = String::from(split[0]);
-                    t1.retain(|c| c != '"' || c != '\'');
-                    let mut t2 = String::from(split[1]);
-                    t2.retain(|c| c != '"' || c != '\'');
-                    &binds.insert(t1,t2);
-                },
                 "times" => {
                     let now = SystemTime::now();
                     match now.elapsed() {
@@ -115,28 +80,47 @@ fn main() {
                         }
                     }
                 },
-                input_fin => {
-                    let stdin = prev_comm.map_or(Stdio::inherit(), |output: Child| Stdio::from(output.stdout.unwrap()));
-                    let stdout = if comm.peek().is_some() {
+                "bind" => {
+                    let strin:String = args.next().unwrap().to_string();
+                    let mut split:Vec<&str> = strin.split(":").collect();
+                    let mut t1 = String::from(split[0]);
+                    t1.retain(|c| c != '"' || c != '\'');
+                    let mut t2 = String::from(split[1]);
+                    t2.retain(|c| c != '"' || c != '\'');
+                    &binds.insert(t1,t2);
+                },
+                command => {
+                    let stdin = previous_command
+                        .map_or(Stdio::inherit(),
+                                |output: Child| Stdio::from(output.stdout.unwrap()));
+
+                    let stdout = if commands.peek().is_some() {
                         Stdio::piped()
-                    } 
-                    else {
+                    } else {
                         Stdio::inherit()
                     };
-                    let new_command = Command::new(input_fin).args(arguments).stdin(stdin).stdout(stdout).spawn();
-                    match new_command {
-                        Ok(new_command) => {
-                            prev_comm = Some(new_command);
-                        },
+
+                    let output = Command::new(command)
+                        .args(args)
+                        .stdin(stdin)
+                        .stdout(stdout)
+                        .spawn();
+
+                    match output {
+                        Ok(output) => { previous_command = Some(output); },
                         Err(e) => {
-                            prev_comm = None;
+                            previous_command = None;
                             eprintln!("{}", e);
                         },
                     };
                 }
             }
         }
-        if let Some(mut fin_comm) = prev_comm { fin_comm.wait().unwrap(); }
+
+        if let Some(mut final_command) = previous_command {
+            final_command.wait().unwrap();
+        }
+
     }
 }
 
