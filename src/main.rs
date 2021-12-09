@@ -21,13 +21,9 @@ fn main(){
         while let Some(command) = commands.next()  {
 
             let mut parts = command.trim().split_whitespace();
-<<<<<<< HEAD
-            let command = parts.next().unwrap();
-            let args = parts;
-=======
+
             let mut command = parts.next().unwrap();
             let mut args = parts;
->>>>>>> fdd012ed8bbc84486a1a98e00b89e3ad354b1bb4
 
             if binds.contains_key(command){
                 command = &binds[command];
